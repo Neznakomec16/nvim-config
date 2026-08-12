@@ -1,0 +1,17 @@
+# OS junk
+.DS_Store
+
+# Syncthing folder marker, and conflict copies: lazy.nvim auto-loads any
+# lua/plugins/*.lua, so a conflict copy would silently duplicate plugin specs.
+.stfolder/
+*.sync-conflict-*
+
+# LazyVim starter defaults
+tt.*
+.tests
+doc/tags
+debug
+.repro
+foo.*
+*.log
+data

@@ -1,0 +1,27 @@
+// Syncthing ignore for nvim config (mac <-> linux)
+// NOTE: .stignore itself is not synced — keep a copy on both machines.
+
+// VCS state must never be synced (see Syncthing FAQ on git repos)
+.git
+
+// OS junk ((?d) lets Syncthing delete it if it blocks a directory removal)
+(?d).DS_Store
+
+// Syncthing conflict copies: lazy.nvim auto-loads any lua/plugins/*.lua,
+// so a synced conflict copy would silently duplicate plugin specs.
+*.sync-conflict-*
+
+// Editor swap/backup files
+*.swp
+*.swo
+*~
+
+// LazyVim dev artifacts (mirrors the starter's .gitignore)
+tt.*
+.tests
+doc/tags
+debug
+.repro
+foo.*
+*.log
+data
