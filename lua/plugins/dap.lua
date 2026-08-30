@@ -23,6 +23,54 @@ local function step_out()
   require("dap").step_out()
 end
 
+-- Multi-line input for the dap REPL. The REPL is a prompt buffer (dap-view
+-- embeds nvim-dap's dap.repl), and Neovim hands a prompt callback only the
+-- last line — so multi-line code cannot be typed at the prompt itself.
+-- Instead the text goes through dap.repl.execute: debugpy evaluates a repl
+-- expression with eval() and falls back to exec() on SyntaxError, so whole
+-- statements (for/def/with) arrive intact.
+local function send_to_repl(lines)
+  local text = table.concat(lines, "\n")
+  if text:match("%S") then
+    require("dap").repl.execute(text)
+  end
+end
+
+-- The visual selection, as lines. Yanking exits visual mode as a side effect,
+-- which is what we want after sending.
+local function visual_lines()
+  vim.cmd('normal! "vy')
+  return vim.split(vim.fn.getreg("v"), "\n")
+end
+
+-- A python scratch buffer in a small split below: <CR> in normal mode sends
+-- the whole buffer and clears it, <CR> on a selection sends just that. The
+-- buffer is kept (bufhidden=hide), so reopening restores unsent drafts.
+local function repl_input()
+  local buf = vim.fn.bufnr("dap-repl-input")
+  if buf == -1 then
+    buf = vim.api.nvim_create_buf(false, true)
+    vim.api.nvim_buf_set_name(buf, "dap-repl-input")
+    vim.bo[buf].filetype = "python"
+    vim.bo[buf].bufhidden = "hide"
+    -- Completion from the paused frame, the same source the REPL uses.
+    -- blink keys its sources on this flag (see plugins/blink.lua); the
+    -- omnifunc is the manual <C-x><C-o> fallback.
+    vim.b[buf].dap_repl_input = true
+    vim.bo[buf].omnifunc = "v:lua.require'dap'.omnifunc"
+    vim.keymap.set("n", "<CR>", function()
+      send_to_repl(vim.api.nvim_buf_get_lines(buf, 0, -1, false))
+      vim.api.nvim_buf_set_lines(buf, 0, -1, false, {})
+    end, { buffer = buf, desc = "Send buffer to DAP REPL" })
+    vim.keymap.set("x", "<CR>", function()
+      send_to_repl(visual_lines())
+    end, { buffer = buf, desc = "Send selection to DAP REPL" })
+  end
+  vim.cmd("belowright 8split")
+  vim.api.nvim_win_set_buf(0, buf)
+  vim.cmd("startinsert")
+end
+
 return {
   -- Persist breakpoints to disk and restore them when a file is reopened.
   -- Breakpoints must be set through this plugin's API to be saved, hence
@@ -90,6 +138,23 @@ return {
       { "<leader>ds", "<cmd>DapViewJump sessions<cr>", desc = "Sessions (switch)" },
     },
   },
+  -- The REPL input buffer completes from the debug adapter, exactly like the
+  -- REPL does. It has filetype python (for highlighting/indent), so blink's
+  -- per_filetype cannot single it out: wrap the merged default source list
+  -- and switch on the buffer flag set in repl_input() instead.
+  {
+    "saghen/blink.cmp",
+    optional = true,
+    opts = function(_, opts)
+      local defaults = opts.sources.default
+      opts.sources.default = function()
+        if vim.b.dap_repl_input then
+          return { "omni" }
+        end
+        return type(defaults) == "function" and defaults() or defaults
+      end
+    end,
+  },
   {
     "mfussenegger/nvim-dap",
     dependencies = {
@@ -127,6 +192,10 @@ return {
       { "<leader>db", function() require("persistent-breakpoints.api").toggle_breakpoint() end, desc = "Toggle Breakpoint" },
       { "<leader>dB", function() require("persistent-breakpoints.api").set_conditional_breakpoint() end, desc = "Breakpoint Condition" },
       { "<leader>dX", function() require("persistent-breakpoints.api").clear_all_breakpoints() end, desc = "Clear All Breakpoints" },
+      -- Multi-line REPL input: a scratch split in normal mode, or send the
+      -- selection of any buffer straight to the REPL.
+      { "<leader>dR", repl_input, desc = "REPL multi-line input" },
+      { "<leader>dR", function() send_to_repl(visual_lines()) end, mode = "x", desc = "Send selection to REPL" },
     },
   },
 }

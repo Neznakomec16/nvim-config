@@ -51,3 +51,22 @@ vim.keymap.set("n", "<leader>fo", function()
     vim.notify("Opened: " .. vim.fn.expand("%:t"))
   end
 end, { desc = "Open file in browser / default app" })
+
+-- Fuzzy grep: unlike LazyVim's `<leader>/` (live grep, where every keystroke is
+-- sent to rg as a regex), this dumps every line once and then fuzzy-matches it
+-- in the picker — closer to `rg '' | fzf`. Inside any snacks picker, <C-g>
+-- toggles live/fuzzy on the fly as well.
+--
+-- `ignored = false` deliberately overrides the grep source config in
+-- plugins/snacks.lua: with --no-ignore a monorepo yields hundreds of thousands
+-- of lines that all have to be held in memory for the matcher.
+vim.keymap.set("n", "<leader>s/", function()
+  Snacks.picker.grep({
+    cwd = LazyVim.root(),
+    live = false,
+    search = "",
+    need_search = false,
+    ignored = false,
+    title = "Fuzzy Grep (Root Dir)",
+  })
+end, { desc = "Fuzzy Grep (Root Dir)" })

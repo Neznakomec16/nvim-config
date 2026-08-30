@@ -2,10 +2,13 @@
 -- (.venv, node_modules, caches) would flood the pickers; exclude them
 -- explicitly. The explorer lists directories lazily, so there it is enough
 -- to hide just the noise (.git, __pycache__) while keeping .venv visible.
+--
+-- The globs are matched against every path component, so a bare `.venv` would
+-- miss sibling environments like `.venv-sol`; `.venv*` covers them all.
 local picker_exclude = {
   ".git",
   "__pycache__",
-  ".venv",
+  ".venv*",
   "node_modules",
   ".mypy_cache",
   ".ruff_cache",

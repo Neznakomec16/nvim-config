@@ -25,7 +25,13 @@ return {
               return b_snip
             end
           end,
+          -- item.exact is a case-SENSITIVE full-string equality, so typing `Any` puts typing.Any
+          -- above `any` and the `ANY` constants the fuzzy subsequence match drags in. Above
+          -- sort_text because the LSP cannot know which case was typed.
+          "exact",
           "sort_text",
+          -- frecency boosts score, so it only breaks ties here — deliberately: sort_text above is
+          -- what keeps dunder members from outranking the real candidate.
           "score",
         },
       },
@@ -40,9 +46,10 @@ return {
             -- debugpy can only compute completions for a paused frame; while
             -- the debuggee is running every request fails with "Thread to get
             -- completions seems to have resumed already". Only query it when
-            -- the session is actually stopped.
+            -- the session is actually stopped. Applies to the REPL and to the
+            -- multi-line input buffer from plugins/dap.lua alike.
             enabled = function()
-              if vim.bo.filetype ~= "dap-repl" then
+              if vim.bo.filetype ~= "dap-repl" and not vim.b.dap_repl_input then
                 return true
               end
               local ok, dap = pcall(require, "dap")
