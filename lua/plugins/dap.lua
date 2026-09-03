@@ -192,6 +192,8 @@ return {
       { "<leader>db", function() require("persistent-breakpoints.api").toggle_breakpoint() end, desc = "Toggle Breakpoint" },
       { "<leader>dB", function() require("persistent-breakpoints.api").set_conditional_breakpoint() end, desc = "Breakpoint Condition" },
       { "<leader>dX", function() require("persistent-breakpoints.api").clear_all_breakpoints() end, desc = "Clear All Breakpoints" },
+      -- Jump back to the line the debugger is stopped on (the active frame).
+      { "<leader>df", function() require("dap").focus_frame() end, desc = "Focus stopped line" },
       -- Multi-line REPL input: a scratch split in normal mode, or send the
       -- selection of any buffer straight to the REPL.
       { "<leader>dR", repl_input, desc = "REPL multi-line input" },
