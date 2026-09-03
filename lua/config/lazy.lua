@@ -18,6 +18,9 @@ require("lazy").setup({
   spec = {
     -- add LazyVim and import its plugins
     { "LazyVim/LazyVim", import = "lazyvim.plugins" },
+    -- Helm charts: recognize templates/*.yaml as Helm, highlight Go templates,
+    -- and attach helm_ls instead of treating them as plain YAML.
+    { import = "lazyvim.plugins.extras.lang.helm" },
     -- import/override with your plugins
     { import = "plugins" },
   },
