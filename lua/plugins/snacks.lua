@@ -1,18 +1,22 @@
--- With ignored = true, fd/rg run with --no-ignore, so heavy gitignored dirs
--- (.venv, node_modules, caches) would flood the pickers; exclude them
--- explicitly. The explorer lists directories lazily, so there it is enough
--- to hide just the noise (.git, __pycache__) while keeping .venv visible.
+-- Pickers respect .gitignore (no --no-ignore): venvs, caches, build outputs
+-- and runtime logs are skipped via git metadata in this repo and in every
+-- submodule, so no per-directory exclude list has to be maintained for them.
+-- Untracked files are still searched — rg/fd only skip *ignored* paths.
+-- <a-i> inside any picker toggles ignored files back on for the rare dig
+-- into gitignored content; <a-h> toggles hidden files.
 --
--- The globs are matched against every path component, so a bare `.venv` would
--- miss sibling environments like `.venv-sol`; `.venv*` covers them all.
+-- The explicit excludes cover what .gitignore cannot:
+--  * .git itself is only reachable because hidden = true;
+--  * worktree checkouts under .claude/worktrees are untracked, not ignored,
+--    and appear both at the repo root and inside submodules (hence `**/`);
+--  * __pycache__/.venv*/node_modules are insurance for grepping outside a
+--    git repository, where rg/fd apply no ignore rules at all.
 local picker_exclude = {
   ".git",
+  "**/.claude/worktrees",
   "__pycache__",
   ".venv*",
   "node_modules",
-  ".mypy_cache",
-  ".ruff_cache",
-  ".pytest_cache",
 }
 
 return {
@@ -28,12 +32,10 @@ return {
           },
           files = {
             hidden = true,
-            ignored = true,
             exclude = picker_exclude,
           },
           grep = {
             hidden = true,
-            ignored = true,
             exclude = picker_exclude,
           },
         },
