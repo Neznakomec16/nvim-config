@@ -23,6 +23,43 @@ local function step_out()
   require("dap").step_out()
 end
 
+-- Window picker for dap's jump-to-stopped-line. dap-view pins its panes with
+-- 'winfixbuf', and nvim-dap's default `uselast` strategy blindly calls
+-- nvim_win_set_buf on the current/previous window — E1513 and a DAP error
+-- popup whenever a stop event arrives while focus is in a dap-view pane.
+-- Order: a window already showing the buffer; the focused window when it is a
+-- regular one; the first regular window of the tab; a new split. A regular
+-- window has no 'winfixbuf', an empty 'buftype' and is not floating.
+local function jump_to_stopped_line(bufnr, line, column)
+  local api = vim.api
+  local function set_cursor(win)
+    pcall(api.nvim_win_set_cursor, win, { line, math.max(column, 1) - 1 })
+    api.nvim_win_call(win, function()
+      vim.cmd("normal! zv")
+    end)
+  end
+  local function regular(win)
+    return not vim.wo[win].winfixbuf
+      and vim.bo[api.nvim_win_get_buf(win)].buftype == ""
+      and api.nvim_win_get_config(win).relative == ""
+  end
+  local wins = api.nvim_tabpage_list_wins(0)
+  for _, win in ipairs(wins) do
+    if api.nvim_win_get_buf(win) == bufnr then
+      return set_cursor(win)
+    end
+  end
+  local targets = vim.tbl_filter(regular, wins)
+  local cur = api.nvim_get_current_win()
+  local target = vim.tbl_contains(targets, cur) and cur or targets[1]
+  if not target then
+    vim.cmd("split")
+    target = api.nvim_get_current_win()
+  end
+  api.nvim_win_set_buf(target, bufnr)
+  set_cursor(target)
+end
+
 -- Multi-line input for the dap REPL. The REPL is a prompt buffer (dap-view
 -- embeds nvim-dap's dap.repl), and Neovim hands a prompt callback only the
 -- last line — so multi-line code cannot be typed at the prompt itself.
@@ -157,6 +194,11 @@ return {
   },
   {
     "mfussenegger/nvim-dap",
+    -- Runs after nvim-dap is on the rtp, before LazyVim's config — the same
+    -- side-effect `opts` pattern LazyVim's own lang extras use for dap.
+    opts = function()
+      require("dap").defaults.fallback.switchbuf = jump_to_stopped_line
+    end,
     dependencies = {
       "Weissle/persistent-breakpoints.nvim",
       "LiadOz/nvim-dap-repl-highlights",
