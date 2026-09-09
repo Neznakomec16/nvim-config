@@ -155,9 +155,10 @@ return {
         -- docked dap-ui console pane never had.
         terminal = { hide = true },
       },
-      -- Open on session start, close when it exits. The terminal buffer of the
-      -- last session survives, so reopening after a crash still shows its logs.
-      auto_toggle = true,
+      -- "open" = open on session start and never auto-close; the conditional
+      -- close (only after a clean session) lives in the nvim-dap spec below,
+      -- so a failed test keeps the view with its error output on screen.
+      auto_toggle = "open",
     },
     -- stylua: ignore
     keys = {
@@ -197,7 +198,38 @@ return {
     -- Runs after nvim-dap is on the rtp, before LazyVim's config — the same
     -- side-effect `opts` pattern LazyVim's own lang extras use for dap.
     opts = function()
-      require("dap").defaults.fallback.switchbuf = jump_to_stopped_line
+      local dap = require("dap")
+      dap.defaults.fallback.switchbuf = jump_to_stopped_line
+
+      -- Close dap-view only after a clean session. dap-view's own auto-close
+      -- fires on every termination, wiping the console/REPL exactly when a
+      -- test failed and its traceback is worth reading; auto_toggle = "open"
+      -- disables it, and these listeners re-add closing for clean exits only.
+      -- Failure signals: a stop with reason "exception" (unhandled error) or
+      -- a nonzero exit code (pytest exits 1 on failed tests without any
+      -- exception stop, because pytest swallows assertion errors itself).
+      local failed = {}
+      dap.listeners.before.event_stopped["dapview_keep_on_failure"] = function(session, body)
+        if body and body.reason == "exception" then
+          failed[session.id] = true
+        end
+      end
+      dap.listeners.before.event_exited["dapview_keep_on_failure"] = function(session, body)
+        if body and (body.exitCode or 0) ~= 0 then
+          failed[session.id] = true
+        end
+      end
+      local function close_if_clean(session)
+        local keep = failed[session.id]
+        failed[session.id] = nil
+        if not keep then
+          vim.schedule(function()
+            require("dap-view").close(true)
+          end)
+        end
+      end
+      dap.listeners.after.event_terminated["dapview_keep_on_failure"] = close_if_clean
+      dap.listeners.after.disconnect["dapview_keep_on_failure"] = close_if_clean
     end,
     dependencies = {
       "Weissle/persistent-breakpoints.nvim",
