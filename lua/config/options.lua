@@ -21,3 +21,12 @@ vim.filetype.add({
 -- basedpyright adds some Pylance-parity features on top of open-source pyright
 -- (e.g. richer completions) that plain pyright doesn't implement.
 vim.g.lazyvim_python_lsp = "basedpyright"
+
+-- Heap headroom for node-based language servers (basedpyright, vtsls): the
+-- monorepo pushed basedpyright past node's default ~4GB old-space ceiling —
+-- lsp.log showed it dying of "JavaScript heap out of memory" every few
+-- minutes, which surfaced as gd/hover intermittently returning nothing.
+-- Set via vim.env (inherited by every process nvim spawns) rather than the
+-- server spec's cmd_env, because venv-selector overwrites cmd_env on venv
+-- activation. It is a ceiling, not an allocation — harmless for small tools.
+vim.env.NODE_OPTIONS = (vim.env.NODE_OPTIONS or "") .. " --max-old-space-size=8192"
