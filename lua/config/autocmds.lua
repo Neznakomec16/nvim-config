@@ -80,9 +80,35 @@ checktime_timer:start(
 )
 
 -- Make external reloads visible instead of silent under-the-cursor swaps.
+-- Also drop and re-request inlay hints: hints computed for the pre-reload
+-- text keep their old coordinates, which renders them mid-word and crashes
+-- the decoration provider (nvim_buf_set_extmark out of range) when the file
+-- got shorter.
 vim.api.nvim_create_autocmd("FileChangedShellPost", {
   group = vim.api.nvim_create_augroup("external_reload_notify", { clear = true }),
   callback = function(ev)
     vim.notify("Reloaded from disk: " .. vim.fn.fnamemodify(ev.file, ":~:."), vim.log.levels.INFO)
+    if vim.lsp.inlay_hint.is_enabled({ bufnr = ev.buf }) then
+      vim.lsp.inlay_hint.enable(false, { bufnr = ev.buf })
+      vim.schedule(function()
+        if vim.api.nvim_buf_is_valid(ev.buf) then
+          vim.lsp.inlay_hint.enable(true, { bufnr = ev.buf })
+        end
+      end)
+    end
+  end,
+})
+
+-- Close dap-view before persistence saves a session: a restored layout brings
+-- back a dap-view window the plugin no longer tracks, and the next debug run
+-- opens its own beside the zombie (dap-view #132 is the same class of issue).
+vim.api.nvim_create_autocmd("User", {
+  pattern = "PersistenceSavePre",
+  group = vim.api.nvim_create_augroup("dapview_out_of_sessions", { clear = true }),
+  callback = function()
+    local ok, dapview = pcall(require, "dap-view")
+    if ok then
+      pcall(dapview.close, true)
+    end
   end,
 })
