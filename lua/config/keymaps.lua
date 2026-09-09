@@ -66,3 +66,45 @@ vim.keymap.set("n", "<leader>s/", function()
     title = "Fuzzy Grep (Root Dir)",
   })
 end, { desc = "Fuzzy Grep (Root Dir)" })
+
+-- Quick manual format on Option+F ("format"; <C-i> must stay jump-forward).
+-- Alt chords are reliable here: alacritty.toml sets option_as_alt = "Both",
+-- so Option+F always arrives as ESC-prefixed f, no keyboard protocol needed.
+vim.keymap.set({ "n", "x" }, "<M-f>", function()
+  LazyVim.format({ force = true })
+end, { desc = "Format buffer/selection" })
+
+-- Browser-style buffer lifecycle on Option/Alt chords. Portable encoding: Alt
+-- arrives as an ESC-prefixed key on Linux terminals by default and on macOS
+-- via alacritty's option_as_alt — no keyboard protocol involved.
+-- <M-w> closes the buffer keeping the window layout; <M-T> (Option+Shift+T)
+-- reopens the most recently closed file, like Ctrl+W / Ctrl+Shift+T in a browser.
+local closed_files = {} ---@type string[]
+vim.api.nvim_create_autocmd("BufDelete", {
+  group = vim.api.nvim_create_augroup("reopen_closed_buffer", { clear = true }),
+  callback = function(ev)
+    if not vim.api.nvim_buf_is_valid(ev.buf) or vim.bo[ev.buf].buftype ~= "" then
+      return
+    end
+    local name = vim.api.nvim_buf_get_name(ev.buf)
+    if name == "" or vim.fn.filereadable(name) ~= 1 then
+      return
+    end
+    closed_files = vim.tbl_filter(function(f)
+      return f ~= name
+    end, closed_files)
+    table.insert(closed_files, name)
+    closed_files = vim.list_slice(closed_files, math.max(1, #closed_files - 20))
+  end,
+})
+vim.keymap.set("n", "<M-w>", function()
+  Snacks.bufdelete()
+end, { desc = "Close buffer" })
+vim.keymap.set("n", "<M-T>", function()
+  local file = table.remove(closed_files)
+  if file then
+    vim.cmd.edit(vim.fn.fnameescape(file))
+  else
+    vim.notify("No recently closed buffers", vim.log.levels.INFO)
+  end
+end, { desc = "Reopen last closed buffer" })

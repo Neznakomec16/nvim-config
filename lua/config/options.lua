@@ -30,3 +30,10 @@ vim.g.lazyvim_python_lsp = "basedpyright"
 -- server spec's cmd_env, because venv-selector overwrites cmd_env on venv
 -- activation. It is a ceiling, not an allocation — harmless for small tools.
 vim.env.NODE_OPTIONS = (vim.env.NODE_OPTIONS or "") .. " --max-old-space-size=8192"
+
+-- No format-on-save: with auto-save writing on InsertLeave/TextChanged every
+-- pause in typing also reformatted the buffer under the cursor. Formatting is
+-- manual: <leader>cf (buffer, or the selection in visual mode) runs conform
+-- with force=true, ignoring this flag; <leader>uf can re-enable auto mode for
+-- a session.
+vim.g.autoformat = false
