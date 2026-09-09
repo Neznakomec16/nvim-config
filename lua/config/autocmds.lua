@@ -58,3 +58,31 @@ vim.api.nvim_create_autocmd("FocusGained", {
     require("snacks.explorer.actions").update(picker, { refresh = true })
   end,
 })
+
+-- Keep buffers in sync with files edited outside nvim (agents, formatters,
+-- git). LazyVim runs `checktime` only on FocusGained/TermClose/TermLeave, so
+-- while sitting in a buffer (or a claudecode terminal) watching an agent work,
+-- buffers go stale: LSP diagnostics point at old text, and the next auto-save
+-- hits "file changed since read" — a blocking prompt that looks like a freeze.
+-- Poll instead: `checktime` stats every listed buffer, cheap at 2s. Reloading
+-- a buffer re-sends its content to LSP, so diagnostics follow automatically.
+local checktime_timer = vim.uv.new_timer()
+checktime_timer:start(
+  2000,
+  2000,
+  vim.schedule_wrap(function()
+    -- checktime is forbidden while the cmdline or a prompt is busy (E11/E565)
+    if vim.fn.mode() == "c" or vim.fn.getcmdwintype() ~= "" then
+      return
+    end
+    vim.cmd("silent! checktime")
+  end)
+)
+
+-- Make external reloads visible instead of silent under-the-cursor swaps.
+vim.api.nvim_create_autocmd("FileChangedShellPost", {
+  group = vim.api.nvim_create_augroup("external_reload_notify", { clear = true }),
+  callback = function(ev)
+    vim.notify("Reloaded from disk: " .. vim.fn.fnamemodify(ev.file, ":~:."), vim.log.levels.INFO)
+  end,
+})
