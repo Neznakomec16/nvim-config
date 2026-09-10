@@ -112,3 +112,56 @@ vim.api.nvim_create_autocmd("User", {
     end
   end,
 })
+
+-- :LspMem — active LSP clients with per-server memory. :LspInfo shows clients,
+-- roots and capabilities but never memory; this walks nvim's own process
+-- subtree and sums RSS per server (mason's python-shim + node pairs count as
+-- one), so numbers match what Activity Monitor would attribute to the server.
+vim.api.nvim_create_user_command("LspMem", function()
+  local procs, children = {}, {}
+  for _, l in ipairs(vim.fn.systemlist("ps -axo pid=,ppid=,rss=,command=")) do
+    local pid, ppid, rss, cmd = l:match("^%s*(%d+)%s+(%d+)%s+(%d+)%s+(.+)$")
+    if pid then
+      pid, ppid = tonumber(pid), tonumber(ppid)
+      procs[pid] = { rss = tonumber(rss), cmd = cmd }
+      children[ppid] = children[ppid] or {}
+      table.insert(children[ppid], pid)
+    end
+  end
+  local function subtree(pid, acc)
+    acc = acc or {}
+    table.insert(acc, pid)
+    for _, ch in ipairs(children[pid] or {}) do
+      subtree(ch, acc)
+    end
+    return acc
+  end
+  local mine = subtree(vim.uv.os_getpid())
+  local claimed = {}
+  local lines = {}
+  for _, c in ipairs(vim.lsp.get_clients()) do
+    local exe = c.config.cmd and type(c.config.cmd) == "table" and c.config.cmd[1] or "?"
+    local needle = vim.fs.basename(exe)
+    local total, main
+    for _, pid in ipairs(mine) do
+      local pr = procs[pid]
+      if pr and not claimed[pid] and not main and pr.cmd:find(needle, 1, true) then
+        main = pid
+        for _, sp in ipairs(subtree(pid)) do
+          claimed[sp] = true
+          total = (total or 0) + (procs[sp] and procs[sp].rss or 0)
+        end
+      end
+    end
+    local bufs = vim.tbl_count(c.attached_buffers or {})
+    lines[#lines + 1] = string.format(
+      "%-24s %8s  pid %-6s  %d buf(s)  root %s",
+      c.name,
+      total and string.format("%.0fMB", total / 1024) or "n/a",
+      main or "-",
+      bufs,
+      c.root_dir and vim.fn.fnamemodify(c.root_dir, ":~") or "-"
+    )
+  end
+  vim.notify(#lines > 0 and table.concat(lines, "\n") or "no active LSP clients", vim.log.levels.INFO, { title = "LSP memory" })
+end, { desc = "Active LSP clients with memory usage" })
