@@ -136,6 +136,26 @@ return {
   -- in. It comes in as a dependency of the LazyVim dap.core extra; disabling it
   -- here also drops the dapui open/close listeners defined in its own config.
   { "rcarriga/nvim-dap-ui", enabled = false },
+
+  -- Inline variable values during a debug session are noise on top of the
+  -- inlay hints: the values are readable in dap-view's Scopes. Off by
+  -- default; <leader>uv toggles them for the times inline really is faster.
+  {
+    "theHamsta/nvim-dap-virtual-text",
+    opts = { enabled = false },
+    config = function(_, opts)
+      require("nvim-dap-virtual-text").setup(opts)
+      Snacks.toggle({
+        name = "Debug Inline Values",
+        get = function()
+          return require("nvim-dap-virtual-text").is_enabled()
+        end,
+        set = function(state)
+          require("nvim-dap-virtual-text")[state and "enable" or "disable"]()
+        end,
+      }):map("<leader>uv")
+    end,
+  },
   {
     "igorlfs/nvim-dap-view",
     opts = {
