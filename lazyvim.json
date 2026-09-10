@@ -13,7 +13,8 @@
     "lazyvim.plugins.extras.lang.typescript.vtsls",
     "lazyvim.plugins.extras.lang.yaml",
     "lazyvim.plugins.extras.test.core",
-    "lazyvim.plugins.extras.ui.treesitter-context"
+    "lazyvim.plugins.extras.ui.treesitter-context",
+    "lazyvim.plugins.extras.util.octo"
   ],
   "install_version": 8,
   "news": {

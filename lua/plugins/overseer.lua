@@ -1,4 +1,13 @@
 return {
+  -- Name the <leader>o prefix in the which-key popup.
+  {
+    "folke/which-key.nvim",
+    opts = {
+      spec = {
+        { "<leader>o", group = "overseer" },
+      },
+    },
+  },
   {
     "stevearc/overseer.nvim",
     -- Loaded early (not on-demand) so its nvim-dap integration is in place
