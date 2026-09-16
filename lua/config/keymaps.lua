@@ -108,3 +108,35 @@ vim.keymap.set("n", "<M-T>", function()
     vim.notify("No recently closed buffers", vim.log.levels.INFO)
   end
 end, { desc = "Reopen last closed buffer" })
+
+-- Close every buffer except the current one and the pinned ones (<leader>bp
+-- pins a buffer in bufferline). The stock pair covers neither ask exactly:
+-- <leader>bo keeps only the current buffer (ignores pins), bufferline's
+-- <leader>bP keeps only pinned ones (closes the current buffer too).
+vim.keymap.set("n", "<leader>bo", function()
+  local ok, groups = pcall(require, "bufferline.groups")
+  Snacks.bufdelete.delete({
+    filter = function(b)
+      if b == vim.api.nvim_get_current_buf() then
+        return false
+      end
+      return not (ok and groups._is_pinned({ id = b }))
+    end,
+  })
+end, { desc = "Delete Other Buffers (keep pinned)" })
+
+-- Cmd+Shift+W (Alt+Shift+W on Linux): close every buffer except the current
+-- one and the pinned ones (<leader>bp pins in bufferline) — the "close other
+-- tabs" sibling of <M-w> close / <M-T> reopen. Arrives as ESC+W: alacritty
+-- mirrors the Cmd chord, Linux terminals send Alt that way natively.
+vim.keymap.set("n", "<M-W>", function()
+  local ok, groups = pcall(require, "bufferline.groups")
+  Snacks.bufdelete.delete({
+    filter = function(b)
+      if b == vim.api.nvim_get_current_buf() then
+        return false
+      end
+      return not (ok and groups._is_pinned({ id = b }))
+    end,
+  })
+end, { desc = "Close other buffers (keep pinned)" })
