@@ -118,6 +118,13 @@ vim.api.nvim_create_autocmd("User", {
 -- subtree and sums RSS per server (mason's python-shim + node pairs count as
 -- one), so numbers match what Activity Monitor would attribute to the server.
 vim.api.nvim_create_user_command("LspMem", function()
+  -- toggle: a second :LspMem dismisses the sticky window (so does <leader>un)
+  for _, n in ipairs(Snacks.notifier.get_history()) do
+    if n.id == "lspmem" and n.shown and not n.hidden then
+      Snacks.notifier.hide("lspmem")
+      return
+    end
+  end
   local procs, children = {}, {}
   for _, l in ipairs(vim.fn.systemlist("ps -axo pid=,ppid=,rss=,etime=,command=")) do
     local pid, ppid, rss, etime, cmd = l:match("^%s*(%d+)%s+(%d+)%s+(%d+)%s+(%S+)%s+(.+)$")
