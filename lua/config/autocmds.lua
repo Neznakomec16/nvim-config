@@ -119,11 +119,11 @@ vim.api.nvim_create_autocmd("User", {
 -- one), so numbers match what Activity Monitor would attribute to the server.
 vim.api.nvim_create_user_command("LspMem", function()
   local procs, children = {}, {}
-  for _, l in ipairs(vim.fn.systemlist("ps -axo pid=,ppid=,rss=,command=")) do
-    local pid, ppid, rss, cmd = l:match("^%s*(%d+)%s+(%d+)%s+(%d+)%s+(.+)$")
+  for _, l in ipairs(vim.fn.systemlist("ps -axo pid=,ppid=,rss=,etime=,command=")) do
+    local pid, ppid, rss, etime, cmd = l:match("^%s*(%d+)%s+(%d+)%s+(%d+)%s+(%S+)%s+(.+)$")
     if pid then
       pid, ppid = tonumber(pid), tonumber(ppid)
-      procs[pid] = { rss = tonumber(rss), cmd = cmd }
+      procs[pid] = { rss = tonumber(rss), etime = etime, cmd = cmd }
       children[ppid] = children[ppid] or {}
       table.insert(children[ppid], pid)
     end
@@ -154,11 +154,13 @@ vim.api.nvim_create_user_command("LspMem", function()
       end
     end
     local bufs = vim.tbl_count(c.attached_buffers or {})
+    -- the root goes into a markdown code span: the notifier renders markdown,
+    -- and bare `~` from two shortened paths pair up into strikethrough
     lines[#lines + 1] = string.format(
-      "%-24s %8s  pid %-6s  %d buf(s)  root %s",
+      "%-24s %8s  up %-11s  %d buf(s)  `%s`",
       c.name,
       total and string.format("%.0fMB", total / 1024) or "n/a",
-      main or "-",
+      main and (procs[main].etime or "?") or "-",
       bufs,
       c.root_dir and vim.fn.fnamemodify(c.root_dir, ":~") or "-"
     )
