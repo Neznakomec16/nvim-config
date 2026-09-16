@@ -154,15 +154,23 @@ vim.api.nvim_create_user_command("LspMem", function()
       end
     end
     local bufs = vim.tbl_count(c.attached_buffers or {})
-    -- the root goes into a markdown code span: the notifier renders markdown,
-    -- and bare `~` from two shortened paths pair up into strikethrough
+    -- last two path segments keep the root readable inside the notifier's
+    -- width cap; the code span stops the markdown renderer from pairing
+    -- stray ~ into strikethrough
+    local root = "-"
+    if c.root_dir then
+      root = "…/" .. vim.fn.fnamemodify(c.root_dir, ":h:t") .. "/" .. vim.fn.fnamemodify(c.root_dir, ":t")
+    end
+    if #lines == 0 then
+      lines[1] = string.format("%-24s %7s  %-11s %4s  %s", "client", "mem", "up", "bufs", "root")
+    end
     lines[#lines + 1] = string.format(
-      "%-24s %8s  up %-11s  %d buf(s)  `%s`",
+      "%-24s %7s  %-11s %4d  `%s`",
       c.name,
       total and string.format("%.0fMB", total / 1024) or "n/a",
       main and (procs[main].etime or "?") or "-",
       bufs,
-      c.root_dir and vim.fn.fnamemodify(c.root_dir, ":~") or "-"
+      root
     )
   end
   -- timeout = 0: stays until dismissed (<leader>un) — a table is not a toast
