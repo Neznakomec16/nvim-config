@@ -165,5 +165,6 @@ vim.api.nvim_create_user_command("LspMem", function()
       c.root_dir and vim.fn.fnamemodify(c.root_dir, ":~") or "-"
     )
   end
-  vim.notify(#lines > 0 and table.concat(lines, "\n") or "no active LSP clients", vim.log.levels.INFO, { title = "LSP memory" })
+  -- timeout = 0: stays until dismissed (<leader>un) — a table is not a toast
+  vim.notify(#lines > 0 and table.concat(lines, "\n") or "no active LSP clients", vim.log.levels.INFO, { title = "LSP memory", timeout = 0 })
 end, { desc = "Active LSP clients with memory usage" })
