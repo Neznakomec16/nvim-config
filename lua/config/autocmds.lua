@@ -183,3 +183,8 @@ vim.api.nvim_create_user_command("LspMem", function()
   -- timeout = 0: stays until dismissed (<leader>un) — a table is not a toast
   vim.notify(#lines > 0 and table.concat(lines, "\n") or "no active LSP clients", vim.log.levels.INFO, { title = "LSP memory", timeout = 0, id = "lspmem" })
 end, { desc = "Active LSP clients with memory usage" })
+
+-- Keystroke usage log (normal/visual only) for habit coaching — see
+-- lua/config/usage-log.lua. LazyVim auto-loads only options/keymaps/autocmds
+-- from config/, so the module is pulled in here.
+require("config.usage-log")
