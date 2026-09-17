@@ -116,15 +116,28 @@ vim.api.nvim_create_autocmd("User", {
 -- :LspMem — active LSP clients with per-server memory. :LspInfo shows clients,
 -- roots and capabilities but never memory; this walks nvim's own process
 -- subtree and sums RSS per server (mason's python-shim + node pairs count as
--- one), so numbers match what Activity Monitor would attribute to the server.
-vim.api.nvim_create_user_command("LspMem", function()
-  -- toggle: a second :LspMem dismisses the sticky window (so does <leader>un)
+-- one). The sticky window refreshes itself every 2s while shown; a second
+-- :LspMem (or <leader>un) dismisses it and stops the refresh.
+local lspmem_timer ---@type uv.uv_timer_t?
+
+local function lspmem_visible()
   for _, n in ipairs(Snacks.notifier.get_history()) do
     if n.id == "lspmem" and n.shown and not n.hidden then
-      Snacks.notifier.hide("lspmem")
-      return
+      return true
     end
   end
+  return false
+end
+
+local function lspmem_stop()
+  if lspmem_timer then
+    lspmem_timer:stop()
+    lspmem_timer:close()
+    lspmem_timer = nil
+  end
+end
+
+local function lspmem_render()
   local procs, children = {}, {}
   for _, l in ipairs(vim.fn.systemlist("ps -axo pid=,ppid=,rss=,etime=,command=")) do
     local pid, ppid, rss, etime, cmd = l:match("^%s*(%d+)%s+(%d+)%s+(%d+)%s+(%S+)%s+(.+)$")
@@ -180,8 +193,33 @@ vim.api.nvim_create_user_command("LspMem", function()
       root
     )
   end
-  -- timeout = 0: stays until dismissed (<leader>un) — a table is not a toast
-  vim.notify(#lines > 0 and table.concat(lines, "\n") or "no active LSP clients", vim.log.levels.INFO, { title = "LSP memory", timeout = 0, id = "lspmem" })
+  vim.notify(
+    #lines > 0 and table.concat(lines, "\n") or "no active LSP clients",
+    vim.log.levels.INFO,
+    { title = "LSP memory", timeout = 0, id = "lspmem" }
+  )
+end
+
+vim.api.nvim_create_user_command("LspMem", function()
+  if lspmem_visible() then
+    lspmem_stop()
+    Snacks.notifier.hide("lspmem")
+    return
+  end
+  lspmem_render()
+  lspmem_stop()
+  lspmem_timer = vim.uv.new_timer()
+  lspmem_timer:start(
+    2000,
+    2000,
+    vim.schedule_wrap(function()
+      if not lspmem_visible() then
+        lspmem_stop()
+        return
+      end
+      lspmem_render()
+    end)
+  )
 end, { desc = "Active LSP clients with memory usage" })
 
 -- Keystroke usage log (normal/visual only) for habit coaching — see
