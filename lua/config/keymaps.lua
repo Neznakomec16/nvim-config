@@ -36,6 +36,19 @@ vim.keymap.set("n", "<leader>fl", function()
   vim.notify("Copied: " .. loc)
 end, { desc = "Copy file path with line number" })
 
+-- Visual counterpart: `path:start-end` of the selected lines (collapses to
+-- `path:line` for a one-line selection), then leaves visual mode like `y`.
+vim.keymap.set("x", "<leader>fl", function()
+  local a, b = vim.fn.line("v"), vim.fn.line(".")
+  if a > b then
+    a, b = b, a
+  end
+  local loc = vim.fn.expand("%") .. ":" .. (a == b and a or a .. "-" .. b)
+  vim.fn.setreg("+", loc)
+  vim.notify("Copied: " .. loc)
+  vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Esc>", true, false, true), "n", false)
+end, { desc = "Copy file path with line range" })
+
 -- Open the current file in the OS default app — a browser for .html. Built-in
 -- `gx` only opens the URL or path under the cursor, never the buffer itself.
 vim.keymap.set("n", "<leader>fo", function()
