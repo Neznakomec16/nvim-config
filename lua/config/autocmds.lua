@@ -222,10 +222,9 @@ vim.api.nvim_create_user_command("LspMem", function()
   )
 end, { desc = "Active LSP clients with memory usage" })
 
--- Keystroke usage log (normal/visual only) for habit coaching — see
--- lua/config/usage-log.lua. LazyVim auto-loads only options/keymaps/autocmds
--- from config/, so the module is pulled in here.
-require("config.usage-log")
+-- Keystroke usage log for habit coaching (lua/config/usage-log.lua) is OFF:
+-- disabled 2026-09-18 while chasing input lag. Re-enable by restoring the
+-- require("config.usage-log") line.
 
 -- Dispose every overseer task before quitting. A session that exits with
 -- live streaming tasks (docker compose, temporal, port-forwards) feeds an
