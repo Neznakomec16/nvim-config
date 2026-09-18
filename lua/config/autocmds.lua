@@ -226,3 +226,21 @@ end, { desc = "Active LSP clients with memory usage" })
 -- lua/config/usage-log.lua. LazyVim auto-loads only options/keymaps/autocmds
 -- from config/, so the module is pulled in here.
 require("config.usage-log")
+
+-- Dispose every overseer task before quitting. A session that exits with
+-- live streaming tasks (docker compose, temporal, port-forwards) feeds an
+-- endless redraw stream into the quit hooks' vim.wait and can livelock the
+-- exit at 99% CPU (seen 2026-09-18). ExitPre runs before the plugins' own
+-- VimLeavePre cleanup, so by the time they wait, nothing is streaming.
+vim.api.nvim_create_autocmd("ExitPre", {
+  group = vim.api.nvim_create_augroup("overseer_dispose_on_exit", { clear = true }),
+  callback = function()
+    local overseer = package.loaded["overseer"]
+    if not overseer then
+      return
+    end
+    for _, task in ipairs(overseer.list_tasks({})) do
+      pcall(task.dispose, task, true)
+    end
+  end,
+})
