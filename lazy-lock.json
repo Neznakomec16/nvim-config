@@ -13,6 +13,7 @@
   "git-conflict.nvim": { "branch": "main", "commit": "a1badcd070d176172940eb55d9d59029dad1c5a6" },
   "gitsigns.nvim": { "branch": "main", "commit": "5be654f2232c10ddcad19c1607a67b6b4b78fc29" },
   "grug-far.nvim": { "branch": "main", "commit": "11595bf747edc270bce2069d1020502ad4ae56cf" },
+  "hardtime.nvim": { "branch": "main", "commit": "5165840fe680eab46de1fc6dbff48f148fdcf018" },
   "helm-ls.nvim": { "branch": "main", "commit": "20df43509b02a3ce3c6b3eee254d6e2bffa9a370" },
   "im-select.nvim": { "branch": "master", "commit": "963a4e9d528ef8a8d328eeff690593b0146d30e2" },
   "inc-rename.nvim": { "branch": "main", "commit": "ddff8bd3eccedf043bd73f5bf89cf90d2d6d8105" },
