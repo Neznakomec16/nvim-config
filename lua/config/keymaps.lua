@@ -153,3 +153,17 @@ vim.keymap.set("n", "<M-W>", function()
     end,
   })
 end, { desc = "Close other buffers (keep pinned)" })
+
+-- Numbered terminals on the stock toggle: <c-/> is terminal #1 (unchanged),
+-- 2<c-/> opens/toggles terminal #2, 3<c-/> #3 and so on — each its own shell,
+-- so several processes can run side by side. Snacks keys instances by env, so
+-- the count becomes the instance id. <c-_> is the same key over tmux/legacy
+-- encodings (that is also why Ctrl+- lands here).
+local function numbered_terminal()
+  Snacks.terminal.toggle(nil, {
+    cwd = LazyVim.root(),
+    env = { SNACKS_TERM_ID = tostring(vim.v.count1) },
+  })
+end
+vim.keymap.set("n", "<c-/>", numbered_terminal, { desc = "Terminal N (count)" })
+vim.keymap.set("n", "<c-_>", numbered_terminal, { desc = "Terminal N (count)" })
