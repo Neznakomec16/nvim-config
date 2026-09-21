@@ -87,6 +87,17 @@ checktime_timer:start(
 vim.api.nvim_create_autocmd("FileChangedShellPost", {
   group = vim.api.nvim_create_augroup("external_reload_notify", { clear = true }),
   callback = function(ev)
+    -- A deleted file never reconciles its timestamp, so the 2s checktime
+    -- poll would re-fire this forever: warn once and go quiet until the
+    -- file reappears (which clears the flag and resumes reload notices).
+    if vim.v.fcs_reason == "deleted" then
+      if not vim.b[ev.buf].usage_deleted_notified then
+        vim.b[ev.buf].usage_deleted_notified = true
+        vim.notify("File deleted on disk (buffer kept): " .. vim.fn.fnamemodify(ev.file, ":~:."), vim.log.levels.WARN)
+      end
+      return
+    end
+    vim.b[ev.buf].usage_deleted_notified = nil
     vim.notify("Reloaded from disk: " .. vim.fn.fnamemodify(ev.file, ":~:."), vim.log.levels.INFO)
     if vim.lsp.inlay_hint.is_enabled({ bufnr = ev.buf }) then
       vim.lsp.inlay_hint.enable(false, { bufnr = ev.buf })
