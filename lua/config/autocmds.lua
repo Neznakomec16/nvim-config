@@ -254,3 +254,20 @@ vim.api.nvim_create_autocmd("ExitPre", {
     end
   end,
 })
+
+-- The helm extra marks every templates/*.yaml as a Helm template and helm_ls
+-- then validates it against the kubernetes schema — bogus "property not
+-- allowed" on any non-chart file that merely lives in a templates/ folder
+-- (e.g. this repo's toloft.yaml app manifests). Helm templates only exist
+-- inside a chart, so demote the filetype back to yaml when no Chart.yaml is
+-- found up the tree.
+vim.api.nvim_create_autocmd("FileType", {
+  pattern = "helm",
+  group = vim.api.nvim_create_augroup("helm_only_inside_charts", { clear = true }),
+  callback = function(ev)
+    local dir = vim.fs.dirname(vim.api.nvim_buf_get_name(ev.buf))
+    if dir ~= "" and not vim.fs.find("Chart.yaml", { upward = true, path = dir })[1] then
+      vim.bo[ev.buf].filetype = "yaml"
+    end
+  end,
+})
