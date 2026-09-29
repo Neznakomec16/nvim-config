@@ -15,6 +15,7 @@ local picker_exclude = {
   ".git",
   "**/.claude/worktrees",
   "__pycache__",
+  ".pytest_cache",
   ".venv*",
   "node_modules",
 }
@@ -28,7 +29,7 @@ return {
           explorer = {
             hidden = true,
             ignored = true,
-            exclude = { ".git", "__pycache__" },
+            exclude = { ".git", "__pycache__", ".pytest_cache" },
           },
           files = {
             hidden = true,
