@@ -30,6 +30,28 @@ return {
             hidden = true,
             ignored = true,
             exclude = { ".git", "__pycache__", ".pytest_cache" },
+            -- "." and <BS> keep the pickers' root in step with the tree:
+            -- zooming also tcd-s into the directory, zooming out tcd-s back.
+            -- Without this the tree and <leader><leader>/grep roots silently
+            -- diverge (the stock <C-c> trap, just discovered the hard way).
+            win = {
+              list = {
+                keys = {
+                  ["."] = "explorer_focus_cd",
+                  ["<BS>"] = "explorer_up_cd",
+                },
+              },
+            },
+            actions = {
+              explorer_focus_cd = function(picker)
+                require("snacks.explorer.actions").actions.explorer_focus(picker)
+                vim.cmd.tcd(vim.fn.fnameescape(picker:cwd()))
+              end,
+              explorer_up_cd = function(picker)
+                require("snacks.explorer.actions").actions.explorer_up(picker)
+                vim.cmd.tcd(vim.fn.fnameescape(picker:cwd()))
+              end,
+            },
           },
           files = {
             hidden = true,
