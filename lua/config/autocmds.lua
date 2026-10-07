@@ -237,6 +237,10 @@ end, { desc = "Active LSP clients with memory usage" })
 -- disabled 2026-09-18 while chasing input lag. Re-enable by restoring the
 -- require("config.usage-log") line.
 
+-- Redraw-lag instrumentation: watchdog around the bufferline tabline eval
+-- plus the :LagProbe command. See lua/config/lag-watchdog.lua.
+require("config.lag-watchdog")
+
 -- Dispose every overseer task before quitting. A session that exits with
 -- live streaming tasks (docker compose, temporal, port-forwards) feeds an
 -- endless redraw stream into the quit hooks' vim.wait and can livelock the
