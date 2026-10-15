@@ -39,17 +39,37 @@ return {
                 keys = {
                   ["."] = "explorer_focus_cd",
                   ["<BS>"] = "explorer_up_cd",
+                  [","] = "explorer_back_cd",
                 },
               },
             },
             actions = {
               explorer_focus_cd = function(picker)
+                -- Remember where the zoom started so "," can return in one press
+                -- instead of a <BS> per level (deep Java packages).
+                local before = picker:cwd()
                 require("snacks.explorer.actions").actions.explorer_focus(picker)
+                if picker:cwd() ~= before then
+                  local stack = vim.g.explorer_root_stack or {}
+                  table.insert(stack, before)
+                  vim.g.explorer_root_stack = stack
+                end
                 vim.cmd.tcd(vim.fn.fnameescape(picker:cwd()))
               end,
               explorer_up_cd = function(picker)
                 require("snacks.explorer.actions").actions.explorer_up(picker)
                 vim.cmd.tcd(vim.fn.fnameescape(picker:cwd()))
+              end,
+              explorer_back_cd = function(picker)
+                local stack = vim.g.explorer_root_stack or {}
+                local prev = table.remove(stack)
+                vim.g.explorer_root_stack = stack
+                if not prev then
+                  return vim.notify("No zoom to go back from", vim.log.levels.INFO)
+                end
+                picker:set_cwd(prev)
+                picker:find()
+                vim.cmd.tcd(vim.fn.fnameescape(prev))
               end,
             },
           },
