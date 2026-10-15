@@ -241,6 +241,17 @@ end, { desc = "Active LSP clients with memory usage" })
 -- plus the :LagProbe command. See lua/config/lag-watchdog.lua.
 require("config.lag-watchdog")
 
+-- Java/Kotlin navigation without a Gradle import: a ctags index at the repo
+-- root (universal-ctags, regenerate with
+--   ctags -R --languages=java,kotlin --kinds-java=+p --exclude=build -f tags .
+-- ). "./tags;" walks upward from the file, so deep package dirs find it.
+vim.api.nvim_create_autocmd("FileType", {
+  pattern = { "java", "kotlin" },
+  callback = function()
+    vim.opt_local.tags = "./tags;"
+  end,
+})
+
 -- Dispose every overseer task before quitting. A session that exits with
 -- live streaming tasks (docker compose, temporal, port-forwards) feeds an
 -- endless redraw stream into the quit hooks' vim.wait and can livelock the
