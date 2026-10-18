@@ -9,6 +9,20 @@ end, { desc = "Search buffer symbols" })
 
 vim.keymap.set("i", "jj", "<Esc>", { desc = "Exit insert mode" })
 
+Snacks.toggle({
+  name = "Auto Completion",
+  get = function()
+    return vim.g.blink_auto_completion ~= false
+  end,
+  set = function(state)
+    vim.g.blink_auto_completion = state
+    local cmp = package.loaded["blink.cmp"]
+    if not state and cmp then
+      cmp.cancel()
+    end
+  end,
+}):map("<leader>uo")
+
 -- Override LazyVim's default <C-hjkl> window nav with vim-tmux-navigator's
 -- versions (see plugins/tmux-navigator.lua) so the same keys also cross
 -- into tmux panes when there's no more nvim split to move into.

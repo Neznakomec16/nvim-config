@@ -4,7 +4,12 @@
 return {
   {
     "folke/tokyonight.nvim",
-    opts = { style = "moon" },
+    opts = {
+      style = "moon",
+      on_highlights = function(highlights)
+        highlights.DiagnosticUnnecessary = {}
+      end,
+    },
   },
   {
     "LazyVim/LazyVim",

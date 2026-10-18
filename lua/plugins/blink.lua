@@ -10,6 +10,16 @@ return {
       -- Show the function signature with the current argument highlighted
       -- while typing inside the parentheses.
       signature = { enabled = true },
+      completion = {
+        menu = {
+          auto_show = function()
+            return vim.g.blink_auto_completion ~= false
+          end,
+        },
+        list = { selection = { preselect = false, auto_insert = false } },
+        documentation = { auto_show = false },
+        ghost_text = { enabled = false },
+      },
       fuzzy = {
         -- Default is { 'score', 'sort_text' }, which lets fuzzy score override the
         -- LSP server's own ranking. That let dunder methods (e.g. `__getattribute__`)
