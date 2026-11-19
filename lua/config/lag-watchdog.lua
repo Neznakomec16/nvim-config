@@ -39,11 +39,17 @@ local function context()
   for _ in pairs(vim.api.nvim_get_hl(0, {})) do
     hl_count = hl_count + 1
   end
+  -- count(), not #get(): get() deep-copies every diagnostic, and with tens of
+  -- thousands of them that copy alone costs as much as the eval being logged.
+  local diags = 0
+  for _, n in pairs(vim.diagnostic.count()) do
+    diags = diags + n
+  end
   return string.format(
     "bufs=%d wins=%d diags=%d hl_groups=%d uptime_min=%d",
     bufs,
     #vim.api.nvim_list_wins(),
-    #vim.diagnostic.get(),
+    diags,
     hl_count,
     ((vim.uv.now() - started) / 60000)
   )
